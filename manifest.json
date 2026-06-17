@@ -1,0 +1,13 @@
+{
+  "name": "Tarjeta Resumen Personalizada",
+  "organization": "Innovación & Desarrollo",
+  "description": "Tarjeta de métricas estilizada con icono de Google Material Icons.",
+  "logoUrl": "https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/corporate_fare/default/24px.svg",
+  "companyUrl": "https://github.com",
+  "supportUrl": "https://github.com",
+  "resources": {
+    "js": "index.js",
+    "css": "style.css",
+    "config": "config.json"
+  }
+}

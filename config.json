@@ -1,0 +1,36 @@
+{
+  "data": [
+    {
+      "id": "concepts",
+      "label": "Configuración de Datos",
+      "elements": [
+        {
+          "id": "metric",
+          "label": "Métrica (Total Registros)",
+          "type": "METRIC",
+          "options": { "min": 1, "max": 1 }
+        },
+        {
+          "id": "title",
+          "label": "Título de la Tarjeta",
+          "type": "DIMENSION",
+          "options": { "min": 0, "max": 1 }
+        }
+      ]
+    }
+  ],
+  "style": [
+    {
+      "id": "style_options",
+      "label": "Estilo del Icono",
+      "elements": [
+        {
+          "id": "icon_name",
+          "label": "Nombre del Material Icon (ej. corporate_fare)",
+          "type": "TEXT",
+          "defaultValue": "corporate_fare"
+        }
+      ]
+    }
+  ]
+}
