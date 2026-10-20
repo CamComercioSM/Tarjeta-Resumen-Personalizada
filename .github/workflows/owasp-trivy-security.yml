@@ -1,0 +1,75 @@
+# CCSM: auditoria de seguridad de codigo y dependencias.
+# Trivy no reemplaza pruebas OWASP Top 10 especializadas (SAST/DAST).
+name: Seguridad OWASP - Trivy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trivy-security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-baseline:
+    name: Vulnerabilidades, secretos y configuracion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Obtener codigo sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Ejecutar Trivy (sin ataques a servidores)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          format: sarif
+          limit-severities-for-sarif: 'true'
+          output: trivy-owasp.sarif
+          exit-code: '0' # Fase inicial: obtener linea base; no bloquear PR por hallazgos historicos.
+          skip-dirs: node_modules,vendor,vendor_working,dist,build,.next,coverage,.git,storage,cache,tmp,logs
+          timeout: 10m0s
+          hide-progress: true
+
+      - name: Comprobar evidencia y resumir resultados
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("trivy-owasp.sarif")
+          if not path.is_file():
+              raise SystemExit("::error::Trivy no genero el archivo SARIF esperado.")
+          report = json.loads(path.read_text(encoding="utf-8"))
+          findings = sum(len(run.get("results", [])) for run in report.get("runs", []))
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("## Revision automatizada de seguridad CCSM\n")
+              out.write(f"**Hallazgos Trivy de severidad alta/critica:** {findings}\n\n")
+              out.write("Incluye CVE de dependencias, secretos potenciales y configuraciones. ")
+              out.write("Revisar el artefacto SARIF para clasificar falsos positivos y remediaciones.\n\n")
+              out.write("**Modalidad:** linea base sin bloqueo por hallazgos existentes. ")
+              out.write("No se realizaron ataques dinamicos contra ninguna URL.\n")
+          print(f"Analisis terminado; {findings} resultado(s) en SARIF.")
+
+          PY
+
+      - name: Conservar evidencia SARIF para seguimiento
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: trivy-owasp-sarif
+          path: trivy-owasp.sarif
+          if-no-files-found: warn
+          retention-days: 7
